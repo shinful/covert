@@ -94,7 +94,7 @@ static BOOL enabled = nil;
 	if (frame.size.height < 44.0f)
 		[button setFrame:CGRectMake(180.0f, 5.0f, 120.0f, 24.0f)];
 	else
-		[button setFrame:CGRectMake(112.0f, 8.0f, 120.0f, 30.0f)];
+		[button setFrame:CGRectMake(112.0f, 8.0f, 120.0f, 30.0f)];[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:policy];
 }
 
 %end
@@ -109,6 +109,10 @@ static BOOL enabled = nil;
 %end
 
 %hook BrowserController
+
+- (void)addRecentSearch:(id)search {
+	if (!enabled) %orig;
+}
 
 - (void)setShowingTabs:(BOOL)tabs {
 	%orig;
@@ -128,6 +132,7 @@ static BOOL enabled = nil;
 	if (enabled) {
 		policy = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookieAcceptPolicy];
 		[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyNever];
+		[[NSUserDefaults standardUserDefaults] setInteger:policy forKey:@"CovertCookiePolicy"];
 	} else {
 		[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:policy];
 	}
@@ -138,6 +143,8 @@ static BOOL enabled = nil;
 	} else {
 		[button setStyle:(UIBarButtonItemStyle)0];
 		[button setTitle:@"Private Browsing" forState:UIControlStateNormal];
+
+		[MSHookIvar<id>(addressView, "_searchTextField") setText:@""];
 	}
 	
 	[buttonBar setPrivate:enabled animated:YES];
@@ -145,12 +152,25 @@ static BOOL enabled = nil;
 	[UINavigationBar setPrivate:enabled animated:YES];
 }
 
+- (void)applicationWillTerminate:(UIApplication *)application {
+	%orig;
+
+	[[NSUserDefaults standardUserDefaults] setInteger:policy forKey:@"CovertCookiePolicy"];
+	[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:policy];
+}
+
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
 	%orig;
 	
 	buttonBar = [[%c(BrowserController) sharedBrowserController] buttonBar];
 	
-	policy = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookieAcceptPolicy];
+	if ([[[[NSUserDefaults standardUserDefaults] dictionaryRepresentation] allKeys] containsObject:@"CovertCookiePolicy"]) {
+		policy = [[NSUserDefaults standardUserDefaults] integerForKey:@"CovertCookiePolicy"];
+		[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:policy];
+	} else {
+		policy = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookieAcceptPolicy];
+		[[NSUserDefaults standardUserDefaults] setInteger:policy forKey:@"CovertCookiePolicy"];
+	}
 
 	button = [[%c(UINavigationButton) alloc] initWithTitle:@"Private Browsing"];
 	[button addTarget:self action:@selector(togglePrivate) forControlEvents:UIControlEventTouchUpInside];
