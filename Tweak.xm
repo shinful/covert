@@ -94,7 +94,7 @@ static BOOL enabled = nil;
 	if (frame.size.height < 44.0f)
 		[button setFrame:CGRectMake(180.0f, 5.0f, 120.0f, 24.0f)];
 	else
-		[button setFrame:CGRectMake(112.0f, 8.0f, 120.0f, 30.0f)];[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:policy];
+		[button setFrame:CGRectMake(112.0f, 8.0f, 120.0f, 30.0f)];
 }
 
 %end
