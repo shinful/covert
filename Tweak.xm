@@ -15,12 +15,12 @@ static BOOL enabled = nil;
 - (void)setPrivate:(BOOL)priv animated:(BOOL)animated {
 	UIView *bar = MSHookIvar<id>(self, "_gradientBar");
 	NSArray *subs = [bar subviews];
-	
+
 	if (animated) {
 		[UIView beginAnimations:nil context:NULL];
 		[UIView setAnimationDuration:0.5f];
 	}
-	
+
 	if (priv) {
 		for (UIView *s in subs) {
 			if ([s isKindOfClass:[UIImageView class]]) [s setAlpha:0.7f];
@@ -30,17 +30,16 @@ static BOOL enabled = nil;
 			if ([s isKindOfClass:[UIImageView class]]) [s setAlpha:1.0f];
 		}
 	}
-	
+
 	if (animated) [UIView commitAnimations];
 }
 
-- (id)initWithFrame:(CGRect)frame { 
-	return (addressView = %orig); 
+- (id)initWithFrame:(CGRect)frame {
+	return (addressView = %orig);
 }
 
 %end
 
-// XXX: this is stupid, and it also doesn't work
 %hook UINavigationBar
 
 %new(v@:cc)
@@ -49,12 +48,12 @@ static BOOL enabled = nil;
 		[UIView beginAnimations:nil context:NULL];
 		[UIView setAnimationDuration:0.5f];
 	}
-	
+
 	for (id nav in navbars) {
 		if (priv) [nav setTintColor:[UIColor grayColor]];
 		else [nav setTintColor:nil];
 	}
-	
+
 	if (animated) [UIView commitAnimations];
 }
 
@@ -80,16 +79,16 @@ static BOOL enabled = nil;
 		[UIView beginAnimations:nil context:NULL];
 		[UIView setAnimationDuration:0.5f];
 	}
-	
+
 	if (priv) [self setTintColor:[UIColor grayColor]];
 	else [self setTintColor:nil];
-	
+
 	if (animated) [UIView commitAnimations];
 }
 
 - (void)setFrame:(CGRect)frame {
 	%orig;
-	
+
 	// XXX: i fail, and i know it
 	if (frame.size.height < 44.0f)
 		[button setFrame:CGRectMake(180.0f, 5.0f, 120.0f, 24.0f)];
@@ -101,7 +100,7 @@ static BOOL enabled = nil;
 
 %hook WebHistory
 
-// XXX: you did /not/ see this
+// XXX: (jedi mind trick:) you did /not/ see this
 - (void)_visitedURL:(NSURL *)url withTitle:(NSString *)title method:(NSString *)method wasFailure:(BOOL)wasFailure increaseVisitCount:(BOOL)increaseVisitCount {
 	if (!enabled) %orig;
 }
@@ -128,7 +127,7 @@ static BOOL enabled = nil;
 %new(v@:)
 - (void)togglePrivate {
 	enabled = !enabled;
-	
+
 	if (enabled) {
 		policy = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookieAcceptPolicy];
 		[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyNever];
@@ -136,7 +135,7 @@ static BOOL enabled = nil;
 	} else {
 		[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:policy];
 	}
-	
+
 	if (enabled) {
 		[button setStyle:(UIBarButtonItemStyle)2];
 		[button setTitle:@"Exit Private" forState:UIControlStateNormal];
@@ -146,7 +145,7 @@ static BOOL enabled = nil;
 
 		[MSHookIvar<id>(addressView, "_searchTextField") setText:@""];
 	}
-	
+
 	[buttonBar setPrivate:enabled animated:YES];
 	[addressView setPrivate:enabled animated:YES];
 	[UINavigationBar setPrivate:enabled animated:YES];
@@ -161,9 +160,10 @@ static BOOL enabled = nil;
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
 	%orig;
-	
+
+    navbars = [[NSMutableArray alloc] init];
 	buttonBar = [[%c(BrowserController) sharedBrowserController] buttonBar];
-	
+
 	if ([[[[NSUserDefaults standardUserDefaults] dictionaryRepresentation] allKeys] containsObject:@"CovertCookiePolicy"]) {
 		policy = [[NSUserDefaults standardUserDefaults] integerForKey:@"CovertCookiePolicy"];
 		[[NSHTTPCookieStorage sharedHTTPCookieStorage] setCookieAcceptPolicy:policy];
@@ -175,7 +175,6 @@ static BOOL enabled = nil;
 	button = [[%c(UINavigationButton) alloc] initWithTitle:@"Private Browsing"];
 	[button addTarget:self action:@selector(togglePrivate) forControlEvents:UIControlEventTouchUpInside];
 	[buttonBar setFrame:[buttonBar frame]];
-} 
-
+}
 %end
 
